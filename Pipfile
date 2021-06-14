@@ -6,8 +6,11 @@ name = "pypi"
 [packages]
 web3 = "*"
 discord = "*"
-
-[dev-packages]
+boto3 = "*"
 
 [requires]
 python_version = "3.9"
+
+[dev-packages]
+black = "*"
+isort = "*"

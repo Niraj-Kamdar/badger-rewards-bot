@@ -6,7 +6,7 @@ import os
 from discord.ext import commands, tasks
 from web3.auto.infura import w3 as web3
 
-from utils import fetch_rewards_tree, formatter
+from utils import fetch_rewards_tree, formatter, summary
 
 UPDATE_INTERVAL_SECONDS = 300
 
@@ -50,6 +50,8 @@ def _parse_merkle_data(
     cache["current_merkle_data"] = current_merkle_data
     cache["formatted_merkle_data"] = formatter(current_merkle_data)
     cache["current_rewards_tree"] = fetch_rewards_tree(current_merkle_data, test=True)
+
+    print(summary(cache["current_rewards_tree"]))
 
 
 @bot.command(name="rewards")

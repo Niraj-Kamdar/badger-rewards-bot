@@ -1,11 +1,13 @@
 import json
 import os
-from decimal import Decimal, getcontext
-from statistics import mean, median
+from collections import defaultdict
 
 import boto3
+from pycoingecko import CoinGeckoAPI
 
-getcontext().prec = 28
+from cgMapping import cgMapping
+
+cg = CoinGeckoAPI()
 
 
 def download_tree(fileName, test=False):
@@ -60,28 +62,35 @@ def formatter(merkle_data):
 
 
 def summary(rewards_tree):
-    token_dist_data = {
-        key: list(
-            map(
-                lambda x: x["totals"]["0x3472A5A71965499acd81997a54BBA8D852C6E53d"],
-                val.values(),
+    token_dist_data = defaultdict(lambda: defaultdict(list))
+    summary = defaultdict(dict)
+    for sett, settDist in rewards_tree["userData"].items():
+        for userDist in settDist.values():
+            for token in userDist["totals"]:
+                # Todo: add support for digg rewards
+                # Need to fetch actual reward in digg from the share
+                if token != "0x798D1bE841a82a273720CE31c822C61a67a601C3":
+                    token_dist_data[sett][token].append(userDist["totals"][token])
+
+    for sett, value in token_dist_data.items():
+        for token in value:
+            summary[sett][token] = _list_summary(
+                token_dist_data[sett][token],
+                cgMapping[token]["id"],
+                cgMapping[token]["decimals"],
             )
-        )
-        for key, val in rewards_tree["userData"].items()
-        if "digg" not in key.lower()
+    return json.dumps(summary)
+
+
+def _list_summary(array, cgTokenId, decimals):
+    array = list(map(lambda x: x / 10 ** decimals, array))
+    tokenPrice = cg.get_price(ids=cgTokenId, vs_currencies="usd")
+    usdPrice = tokenPrice[cgTokenId]["usd"]
+    summary = {
+        "count": len(array),
+        "sum": sum(array),
     }
-
-    return {key: _list_summary(val) for key, val in token_dist_data.items()}
-
-
-def _list_summary(array):
-    count = len(array)
-    array = list(map(lambda x: Decimal(x) / Decimal(10 ** 18), array))
-    return dict(
-        max=str(max(array)),
-        min=str(min(array)),
-        mean=str(mean(array)),
-        sum=str(sum(array)),
-        median=str(median(array)),
-        count=count,
-    )
+    summary["sum(usd)"] = summary["sum"] * usdPrice
+    summary["mean"] = (summary["sum"] / summary["count"],)
+    summary["mean(usd)"] = (summary["sum(usd)"] / summary["count"],)
+    return summary

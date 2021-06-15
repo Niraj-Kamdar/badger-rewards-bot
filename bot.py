@@ -2,7 +2,7 @@
 import json
 import logging
 import os
-
+import discord
 from discord.ext import commands, tasks
 from web3.auto.infura import w3 as web3
 
@@ -17,6 +17,11 @@ logging.basicConfig(
     # datefmt='%H:%M:%S',
     level=logging.INFO
 )
+
+
+
+
+
 
 bot = commands.Bot(command_prefix="/")
 channel = bot.get_channel(os.getenv("DISCORD_CHANNEL_ID"))
@@ -56,7 +61,12 @@ def _parse_merkle_data(
 
 @bot.command(name="rewards")
 async def rewards(ctx):
-    await ctx.send(cache["formatted_merkle_data"])
+    
+    embed = (cache["formatted_merkle_data"])
+    
+    
+    print(embed)
+    await ctx.send(embed = embed)
 
 
 @bot.event

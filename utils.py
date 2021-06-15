@@ -4,7 +4,7 @@ from decimal import Decimal, getcontext
 from statistics import mean, median
 
 import boto3
-
+import discord
 getcontext().prec = 28
 
 
@@ -55,8 +55,29 @@ def fetch_rewards_tree(merkle, test=False):
 def formatter(merkle_data):
     formatted_data = "\n".join(
         map(lambda x: f"{x[0]: <33} {x[1]}", merkle_data.items())
+        
     )
-    return f"```{formatted_data}```"
+    
+    disc = formatted_data.split('\n')
+    cycle = disc[0].split('cycle                            ')
+    cutCycle = 'Cycle:'+cycle[1]
+    root = disc[1].split('root')
+    conHash = disc[2].split('contentHash')
+    startBlock = disc[3].split('startBlock')
+    endBlock = disc[4].split('endBlock')
+    timestamp = disc[5].split('timestamp')
+    blockNumber = disc[6].split('blockNumber')
+    embed=discord.Embed(title=cutCycle,
+      color=0xe0a308)
+    embed.add_field(name='Root',value=root[1],inline=False)
+    embed.add_field(name='ContentHash',value=conHash[1],inline=False)
+    embed.add_field(name='startBlock',value=startBlock[1],inline=False)
+    embed.add_field(name='endBlock',value=endBlock[1],inline=False)
+    embed.add_field(name='timestamp',value=timestamp[1],inline=False)
+    embed.add_field(name='blockNumber',value=blockNumber[1],inline=False)
+
+
+    return embed
 
 
 def summary(rewards_tree):

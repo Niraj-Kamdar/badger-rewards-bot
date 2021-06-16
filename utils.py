@@ -1,6 +1,6 @@
 import json
 import os
-from collections import defaultdict
+from collections import defaultdict, Counter
 
 import boto3
 from pycoingecko import CoinGeckoAPI
@@ -32,9 +32,6 @@ def download_tree(fileName, test=False):
 
 
 def fetch_rewards_tree(merkle, test=False):
-    # TODO Files should be hashed and signed by keeper to prevent tampering
-    # TODO How will we upload addresses securely?
-    # We will check signature before posting
     pastFile = f"rewards-1-{merkle['contentHash']}.json"
 
     currentTree = download_tree(pastFile, test)
@@ -63,7 +60,7 @@ def formatter(merkle_data):
 
 def summary(rewards_tree):
     token_dist_data = defaultdict(lambda: defaultdict(list))
-    summary = defaultdict(dict)
+    summary = defaultdict(Counter)
     for sett, settDist in rewards_tree["userData"].items():
         for userDist in settDist.values():
             for token in userDist["totals"]:
@@ -74,12 +71,16 @@ def summary(rewards_tree):
 
     for sett, value in token_dist_data.items():
         for token in value:
-            summary[sett][token] = _list_summary(
+            summary[cgMapping[token]["name"]] += _list_summary(
                 token_dist_data[sett][token],
                 cgMapping[token]["id"],
                 cgMapping[token]["decimals"],
             )
-    return json.dumps(summary)
+
+    for token in summary:
+        summary[token]["mean"] = summary[token]["sum"] / summary[token]["count"]
+        summary[token]["mean(usd)"] = summary[token]["sum(usd)"] / summary[token]["count"]
+    return summary
 
 
 def _list_summary(array, cgTokenId, decimals):
@@ -91,6 +92,10 @@ def _list_summary(array, cgTokenId, decimals):
         "sum": sum(array),
     }
     summary["sum(usd)"] = summary["sum"] * usdPrice
-    summary["mean"] = (summary["sum"] / summary["count"],)
-    summary["mean(usd)"] = (summary["sum(usd)"] / summary["count"],)
-    return summary
+    # summary["mean"] = (summary["sum"] / summary["count"],)
+    # summary["mean(usd)"] = (summary["sum(usd)"] / summary["count"],)
+    return Counter(summary)
+
+
+def _total_summary():
+    pass

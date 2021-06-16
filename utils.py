@@ -1,6 +1,6 @@
 import json
 import os
-from collections import defaultdict, Counter
+from collections import Counter, defaultdict
 
 import boto3
 from pycoingecko import CoinGeckoAPI
@@ -79,7 +79,9 @@ def summary(rewards_tree):
 
     for token in summary:
         summary[token]["mean"] = summary[token]["sum"] / summary[token]["count"]
-        summary[token]["mean(usd)"] = summary[token]["sum(usd)"] / summary[token]["count"]
+        summary[token]["mean(usd)"] = (
+            summary[token]["sum(usd)"] / summary[token]["count"]
+        )
     return summary
 
 

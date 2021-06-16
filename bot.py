@@ -50,7 +50,9 @@ def _parse_merkle_data(
     cache["current_merkle_data"] = current_merkle_data
     current_rewards_tree = fetch_rewards_tree(current_merkle_data, test=True)
     cache["reward_dist_summary"] = summary(current_rewards_tree)
-    cache["formatted_data"] = formatter({**current_merkle_data, **cache["reward_dist_summary"]})
+    cache["formatted_data"] = formatter(
+        {**current_merkle_data, **cache["reward_dist_summary"]}
+    )
 
 
 @bot.command(name="rewards")

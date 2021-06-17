@@ -53,8 +53,7 @@ def fetch_rewards_tree(merkle, test=False):
 
 
 def formatter(merkle_data):
-    prepare_data = "\n".join(
-        map(lambda x: f"{x[0]: <33} {x[1]}", merkle_data.items()))
+    prepare_data = "\n".join(map(lambda x: f"{x[0]: <33} {x[1]}", merkle_data.items()))
 
     disc = prepare_data.split("\n")
     cycle = disc[0].split("cycle")
@@ -126,8 +125,7 @@ def summary(rewards_tree):
                 # Todo: add support for digg rewards
                 # Need to fetch actual reward in digg from the share
                 if token != "0x798D1bE841a82a273720CE31c822C61a67a601C3":
-                    token_dist_data[sett][token].append(
-                        userDist["totals"][token])
+                    token_dist_data[sett][token].append(userDist["totals"][token])
 
     for sett, value in token_dist_data.items():
         for token in value:
@@ -138,8 +136,7 @@ def summary(rewards_tree):
             )
 
     for token in summary:
-        summary[token]["mean"] = summary[token]["sum"] / \
-            summary[token]["count"]
+        summary[token]["mean"] = summary[token]["sum"] / summary[token]["count"]
         summary[token]["mean(usd)"] = (
             summary[token]["sum(usd)"] / summary[token]["count"]
         )

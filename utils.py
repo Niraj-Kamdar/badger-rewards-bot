@@ -1,11 +1,13 @@
 import json
 import os
-from decimal import Decimal, getcontext
-from statistics import mean, median
+from collections import Counter, defaultdict
 
 import boto3
+from pycoingecko import CoinGeckoAPI
 import discord
-getcontext().prec = 28
+from cgMapping import cgMapping
+
+cg = CoinGeckoAPI()
 
 
 def download_tree(fileName, test=False):
@@ -30,9 +32,6 @@ def download_tree(fileName, test=False):
 
 
 def fetch_rewards_tree(merkle, test=False):
-    # TODO Files should be hashed and signed by keeper to prevent tampering
-    # TODO How will we upload addresses securely?
-    # We will check signature before posting
     pastFile = f"rewards-1-{merkle['contentHash']}.json"
 
     currentTree = download_tree(pastFile, test)
@@ -53,56 +52,99 @@ def fetch_rewards_tree(merkle, test=False):
 
 
 def formatter(merkle_data):
-    formatted_data = "\n".join(
+    prepare_data = "\n".join(
         map(lambda x: f"{x[0]: <33} {x[1]}", merkle_data.items())
-        
     )
     
-    disc = formatted_data.split('\n')
-    cycle = disc[0].split('cycle                            ')
-    cutCycle = 'Cycle:'+cycle[1]
+    disc = prepare_data.split('\n')
+    cycle = disc[0].split('cycle')
+    spaceCycle = cycle[1].split(' ')
+    cutCycle = 'Cycle:'+spaceCycle[29]
     root = disc[1].split('root')
-    conHash = disc[2].split('contentHash')
-    startBlock = disc[3].split('startBlock')
-    endBlock = disc[4].split('endBlock')
-    timestamp = disc[5].split('timestamp')
-    blockNumber = disc[6].split('blockNumber')
-    embed=discord.Embed(title=cutCycle,
+    conHash = disc[2].split('contentHash')[1]
+    startBlock = disc[3].split('startBlock')[1]
+    endBlock = disc[4].split('endBlock')[1]
+    timestamp = disc[5].split('timestamp')[1]
+    blockNumber = disc[6].split('blockNumber')[1]
+    badger = disc[7].split(',')
+    defiDollar = disc[8].split(',')
+    defiCount = round(float(defiDollar[0].split(':')[1]),2)
+    defiSumUsd = round(float(defiDollar[1].split(' ')[2]),2)
+    defiSum = round(float(defiDollar[2].split(' ')[2]),2)
+    defiAverageUsd = round(float(defiDollar[3].split(' ')[2]),2)
+    dColon = defiDollar[4].split(' ')
+    dAverage = round(float(dColon[2].split('}')[0]),2)
+    count = round(float(badger[0].split(':')[1]),2)
+    bSumUsd = round(float(badger[1].split(' ')[2]),2)
+    bSum = round(float(badger[2].split(' ')[2]),2)
+    bAverageUsd = round(float(badger[3].split(' ')[2]),2)
+    bColon = badger[4].split(' ')
+    bAverage = round(float(bColon[2].split('}')[0]),2)
+
+    formatted_data=discord.Embed(title=cutCycle,
       color=0xe0a308)
-    embed.add_field(name='Root',value=root[1],inline=False)
-    embed.add_field(name='ContentHash',value=conHash[1],inline=False)
-    embed.add_field(name='startBlock',value=startBlock[1],inline=False)
-    embed.add_field(name='endBlock',value=endBlock[1],inline=False)
-    embed.add_field(name='timestamp',value=timestamp[1],inline=False)
-    embed.add_field(name='blockNumber',value=blockNumber[1],inline=False)
+    formatted_data.add_field(name='Root',value=root[1],inline=False)
+    formatted_data.add_field(name='ContentHash',value=conHash,inline=False)
+    formatted_data.add_field(name='StartBlock',value=startBlock,inline=True)
+    formatted_data.add_field(name='EndBlock',value=endBlock,inline=True)
+    formatted_data.add_field(name='\u200b',value='\u200b',inline=False)
+    formatted_data.add_field(name='Total Badger Distributed (BADGER)',value=bSum,inline=True)
+    formatted_data.add_field(name='Total Badger Distributed (USD)',value='$'+str(bSumUsd),inline=True)
+    formatted_data.add_field(name='\u200b',value='\u200b',inline=False)
+    formatted_data.add_field(name='Average Badger Distributed (BADGER)',value=bAverage,inline=True)
+    formatted_data.add_field(name='Average Badger Distributed (USD)',value='$'+str(bAverageUsd),inline=True)
+    formatted_data.add_field(name='\u200b',value='\u200b',inline=False)
+    formatted_data.add_field(name='Total DefiDollar Distributed (USD)',value='$'+str(defiSumUsd),inline=True)
+    formatted_data.add_field(name='Average DefiDollar Distributed (USD)',value='$'+str(defiAverageUsd),inline=True)
 
 
-    return embed
+    
+
+
+
+    return formatted_data
 
 
 def summary(rewards_tree):
-    token_dist_data = {
-        key: list(
-            map(
-                lambda x: x["totals"]["0x3472A5A71965499acd81997a54BBA8D852C6E53d"],
-                val.values(),
+    token_dist_data = defaultdict(lambda: defaultdict(list))
+    summary = defaultdict(Counter)
+    for sett, settDist in rewards_tree["userData"].items():
+        for userDist in settDist.values():
+            for token in userDist["totals"]:
+                # Todo: add support for digg rewards
+                # Need to fetch actual reward in digg from the share
+                if token != "0x798D1bE841a82a273720CE31c822C61a67a601C3":
+                    token_dist_data[sett][token].append(userDist["totals"][token])
+
+    for sett, value in token_dist_data.items():
+        for token in value:
+            summary[cgMapping[token]["name"]] += _list_summary(
+                token_dist_data[sett][token],
+                cgMapping[token]["id"],
+                cgMapping[token]["decimals"],
             )
+
+    for token in summary:
+        summary[token]["mean"] = summary[token]["sum"] / summary[token]["count"]
+        summary[token]["mean(usd)"] = (
+            summary[token]["sum(usd)"] / summary[token]["count"]
         )
-        for key, val in rewards_tree["userData"].items()
-        if "digg" not in key.lower()
+    return summary
+
+
+def _list_summary(array, cgTokenId, decimals):
+    array = list(map(lambda x: x / 10 ** decimals, array))
+    tokenPrice = cg.get_price(ids=cgTokenId, vs_currencies="usd")
+    usdPrice = tokenPrice[cgTokenId]["usd"]
+    summary = {
+        "count": len(array),
+        "sum": sum(array),
     }
+    summary["sum(usd)"] = summary["sum"] * usdPrice
+    # summary["mean"] = (summary["sum"] / summary["count"],)
+    # summary["mean(usd)"] = (summary["sum(usd)"] / summary["count"],)
+    return Counter(summary)
 
-    return {key: _list_summary(val) for key, val in token_dist_data.items()}
 
-
-def _list_summary(array):
-    count = len(array)
-    array = list(map(lambda x: Decimal(x) / Decimal(10 ** 18), array))
-    return dict(
-        max=str(max(array)),
-        min=str(min(array)),
-        mean=str(mean(array)),
-        sum=str(sum(array)),
-        median=str(median(array)),
-        count=count,
-    )
+def _total_summary():
+    pass

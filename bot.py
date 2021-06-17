@@ -2,7 +2,7 @@
 import json
 import logging
 import os
-import discord
+
 from discord.ext import commands, tasks
 from web3.auto.infura import w3 as web3
 
@@ -17,11 +17,6 @@ logging.basicConfig(
     # datefmt='%H:%M:%S',
     level=logging.INFO
 )
-
-
-
-
-
 
 bot = commands.Bot(command_prefix="/")
 channel = bot.get_channel(os.getenv("DISCORD_CHANNEL_ID"))
@@ -53,20 +48,17 @@ def _parse_merkle_data(
         blockNumber=blockNumber,
     )
     cache["current_merkle_data"] = current_merkle_data
-    cache["formatted_merkle_data"] = formatter(current_merkle_data)
-    cache["current_rewards_tree"] = fetch_rewards_tree(current_merkle_data, test=True)
-
-    print(summary(cache["current_rewards_tree"]))
+    current_rewards_tree = fetch_rewards_tree(current_merkle_data, test=True)
+    cache["reward_dist_summary"] = summary(current_rewards_tree)
+    cache["formatted_data"] = formatter(
+        {**current_merkle_data, **cache["reward_dist_summary"]}
+    )
 
 
 @bot.command(name="rewards")
 async def rewards(ctx):
-    
-    embed = (cache["formatted_merkle_data"])
-    
-    
-    print(embed)
-    await ctx.send(embed = embed)
+    formatted_data = (cache["formatted_data"])
+    await ctx.send(embed = formatted_data)
 
 
 @bot.event
@@ -78,7 +70,8 @@ async def on_ready():
 async def update_rewards():
     for event in event_filter.get_new_entries():
         _parse_merkle_data(*event["args"])
-        await channel.send(cache["formatted_merkle_data"])
+        formatted_data = (cache["formatted_data"])
+        await channel.send(embed = formatted_data)
 
 
 def start():

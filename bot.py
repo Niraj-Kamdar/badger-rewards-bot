@@ -18,8 +18,7 @@ logging.basicConfig(
     # filemode='a',
     # format='%(asctime)s,%(msecs)d %(name)s %(levelname)s %(message)s',
     # datefmt='%H:%M:%S',
-    level=logging.INFO
-)
+    level=logging.INFO)
 
 bot = commands.Bot(command_prefix="/")
 channel = bot.get_channel(os.getenv("DISCORD_CHANNEL_ID"))
@@ -38,9 +37,8 @@ event_filter = contract.events.RootUpdated.createFilter(fromBlock="0x0")
 cache = {}
 
 
-def _parse_merkle_data(
-    cycle, root, contentHash, startBlock, endBlock, timestamp, blockNumber
-):
+def _parse_merkle_data(cycle, root, contentHash, startBlock, endBlock,
+                       timestamp, blockNumber):
     current_merkle_data = dict(
         cycle=cycle,
         root=web3.toHex(root),
@@ -53,9 +51,10 @@ def _parse_merkle_data(
     cache["current_merkle_data"] = current_merkle_data
     current_rewards_tree = fetch_rewards_tree(current_merkle_data, test=True)
     cache["reward_dist_summary"] = summary(current_rewards_tree)
-    cache["formatted_data"] = formatter(
-        {**current_merkle_data, **cache["reward_dist_summary"]}
-    )
+    cache["formatted_data"] = formatter({
+        **current_merkle_data,
+        **cache["reward_dist_summary"]
+    })
 
 
 @bot.command(name="rewards")

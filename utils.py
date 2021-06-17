@@ -1,6 +1,7 @@
 import json
 import os
-from collections import Counter, defaultdict
+from collections import Counter
+from collections import defaultdict
 
 import boto3
 import discord

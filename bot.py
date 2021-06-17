@@ -3,10 +3,13 @@ import json
 import logging
 import os
 
-from discord.ext import commands, tasks
+from discord.ext import commands
+from discord.ext import tasks
 from web3.auto.infura import w3 as web3
 
-from utils import fetch_rewards_tree, formatter, summary
+from utils import fetch_rewards_tree
+from utils import formatter
+from utils import summary
 
 UPDATE_INTERVAL_SECONDS = 300
 

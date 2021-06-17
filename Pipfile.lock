@@ -1,7 +1,7 @@
 {
     "_meta": {
         "hash": {
-            "sha256": "5f43febcca765e6d9ebd9f711f3601bac9c9a47a9d630881a6a8b0071867a0a0"
+            "sha256": "9bb11ade78b9322a7adb26db1e85e154a5dac4c6e95db590233e84b0e510c9f3"
         },
         "pipfile-spec": 6,
         "requires": {
@@ -344,6 +344,14 @@
                 "sha256:ffea251f5cd3c0b9b43c7a7a912777e0bc86263436a87c2555242a348817221b"
             ],
             "version": "==3.17.3"
+        },
+        "pycoingecko": {
+            "hashes": [
+                "sha256:48a0a016fd67ed9bad1e55c2b0c21d314a65233d9b12d229a0e510e5fc5a7080",
+                "sha256:5b6909090ff23a7af8a1e414e0e95a3af29345ec08fddcfba3f50da23a670333"
+            ],
+            "index": "pypi",
+            "version": "==2.1.0"
         },
         "pycryptodome": {
             "hashes": [

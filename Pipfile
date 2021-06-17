@@ -7,6 +7,7 @@ name = "pypi"
 web3 = "*"
 discord = "*"
 boto3 = "*"
+pycoingecko = "*"
 
 [requires]
 python_version = "3.9"

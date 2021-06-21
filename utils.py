@@ -3,6 +3,7 @@ import os
 from collections import Counter, defaultdict
 
 import boto3
+import discord
 from pycoingecko import CoinGeckoAPI
 
 from cgMapping import cgMapping
@@ -52,10 +53,67 @@ def fetch_rewards_tree(merkle, test=False):
 
 
 def formatter(merkle_data):
-    formatted_data = "\n".join(
-        map(lambda x: f"{x[0]: <33} {x[1]}", merkle_data.items())
+    prepare_data = "\n".join(map(lambda x: f"{x[0]: <33} {x[1]}", merkle_data.items()))
+
+    disc = prepare_data.split("\n")
+    cycle = disc[0].split("cycle")
+    spaceCycle = cycle[1].split(" ")
+    cutCycle = "Cycle:" + spaceCycle[29]
+    root = disc[1].split("root")
+    conHash = disc[2].split("contentHash")[1]
+    startBlock = disc[3].split("startBlock")[1]
+    endBlock = disc[4].split("endBlock")[1]
+    timestamp = disc[5].split("timestamp")[1]
+    blockNumber = disc[6].split("blockNumber")[1]
+    badger = disc[7].split(",")
+    defiDollar = disc[8].split(",")
+    defiCount = round(float(defiDollar[0].split(":")[1]), 2)
+    defiSumUsd = round(float(defiDollar[1].split(" ")[2]), 2)
+    defiSum = round(float(defiDollar[2].split(" ")[2]), 2)
+    defiAverageUsd = round(float(defiDollar[3].split(" ")[2]), 2)
+    dColon = defiDollar[4].split(" ")
+    dAverage = round(float(dColon[2].split("}")[0]), 2)
+    count = round(float(badger[0].split(":")[1]), 2)
+    bSumUsd = round(float(badger[1].split(" ")[2]), 2)
+    bSum = round(float(badger[2].split(" ")[2]), 2)
+    bAverageUsd = round(float(badger[3].split(" ")[2]), 2)
+    bColon = badger[4].split(" ")
+    bAverage = round(float(bColon[2].split("}")[0]), 2)
+
+    formatted_data = discord.Embed(title=cutCycle, color=0xE0A308)
+    formatted_data.add_field(name="Root", value=root[1], inline=False)
+    formatted_data.add_field(name="ContentHash", value=conHash, inline=False)
+    formatted_data.add_field(name="StartBlock", value=startBlock, inline=True)
+    formatted_data.add_field(name="EndBlock", value=endBlock, inline=True)
+    formatted_data.add_field(name="\u200b", value="\u200b", inline=False)
+    formatted_data.add_field(
+        name="Total Badger Distributed (BADGER)", value=bSum, inline=True
     )
-    return f"```{formatted_data}```"
+    formatted_data.add_field(
+        name="Total Badger Distributed (USD)", value="$" + str(bSumUsd), inline=True
+    )
+    formatted_data.add_field(name="\u200b", value="\u200b", inline=False)
+    formatted_data.add_field(
+        name="Average Badger Distributed (BADGER)", value=bAverage, inline=True
+    )
+    formatted_data.add_field(
+        name="Average Badger Distributed (USD)",
+        value="$" + str(bAverageUsd),
+        inline=True,
+    )
+    formatted_data.add_field(name="\u200b", value="\u200b", inline=False)
+    formatted_data.add_field(
+        name="Total DefiDollar Distributed (USD)",
+        value="$" + str(defiSumUsd),
+        inline=True,
+    )
+    formatted_data.add_field(
+        name="Average DefiDollar Distributed (USD)",
+        value="$" + str(defiAverageUsd),
+        inline=True,
+    )
+
+    return formatted_data
 
 
 def summary(rewards_tree):
@@ -94,10 +152,4 @@ def _list_summary(array, cgTokenId, decimals):
         "sum": sum(array),
     }
     summary["sum(usd)"] = summary["sum"] * usdPrice
-    # summary["mean"] = (summary["sum"] / summary["count"],)
-    # summary["mean(usd)"] = (summary["sum(usd)"] / summary["count"],)
     return Counter(summary)
-
-
-def _total_summary():
-    pass

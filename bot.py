@@ -57,7 +57,8 @@ def _parse_merkle_data(
 
 @bot.command(name="rewards")
 async def rewards(ctx):
-    await ctx.send(cache["formatted_data"])
+    formatted_data = cache["formatted_data"]
+    await ctx.send(embed=formatted_data)
 
 
 @bot.event
@@ -69,7 +70,8 @@ async def on_ready():
 async def update_rewards():
     for event in event_filter.get_new_entries():
         _parse_merkle_data(*event["args"])
-        await channel.send(cache["formatted_data"])
+        formatted_data = cache["formatted_data"]
+        await channel.send(embed=formatted_data)
 
 
 def start():

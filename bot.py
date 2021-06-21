@@ -68,8 +68,13 @@ async def on_ready():
 
 @tasks.loop(seconds=UPDATE_INTERVAL_SECONDS)
 async def update_rewards():
-    for event in event_filter.get_new_entries():
-        _parse_merkle_data(*event["args"])
+    cycle = contract.functions.currentCycle().call()
+    logger.info("looping...")
+    if cache["current_merkle_data"]["cycle"] != cycle:
+        rewards_data = contract.functions.getCurrentMerkleData().call()
+        _parse_merkle_data(cycle, *rewards_data)
+        logger.info(f"New merkle tree: {cache['current_merkle_data']}")
+
         formatted_data = cache["formatted_data"]
         await channel.send(embed=formatted_data)
 

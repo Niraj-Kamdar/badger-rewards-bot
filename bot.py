@@ -4,23 +4,23 @@ import logging
 import os
 
 from discord.ext import commands, tasks
-from web3.auto.infura import w3 as web3
+from web3 import Web3
 
 from utils import fetch_rewards_tree, formatter, summary
 
 UPDATE_INTERVAL_SECONDS = 300
+TEST = True if os.getenv("ENV") == "TEST" else False
+WEB3_INFURA_HTTP_URL = os.getenv("WEB3_INFURA_HTTP_URL")
 
 logging.basicConfig(
-    # filename="rewards_bots_log.txt",
-    # filemode='a',
-    # format='%(asctime)s,%(msecs)d %(name)s %(levelname)s %(message)s',
-    # datefmt='%H:%M:%S',
     level=logging.INFO
 )
 
 bot = commands.Bot(command_prefix="/")
-channel = bot.get_channel(os.getenv("DISCORD_CHANNEL_ID"))
 logger = logging.getLogger("rewards-bot")
+web3 = Web3(
+    Web3.HTTPProvider(WEB3_INFURA_HTTP_URL)
+)
 
 with open("./abis/BadgerTreeV2.json") as badger_tree_abi_file:
     badger_tree_abi = json.load(badger_tree_abi_file)
@@ -48,7 +48,7 @@ def _parse_merkle_data(
         blockNumber=blockNumber,
     )
     cache["current_merkle_data"] = current_merkle_data
-    current_rewards_tree = fetch_rewards_tree(current_merkle_data, test=True)
+    current_rewards_tree = fetch_rewards_tree(current_merkle_data, test=TEST)
     cache["reward_dist_summary"] = summary(current_rewards_tree)
     cache["formatted_data"] = formatter(
         {**current_merkle_data, **cache["reward_dist_summary"]}
@@ -69,13 +69,13 @@ async def on_ready():
 @tasks.loop(seconds=UPDATE_INTERVAL_SECONDS)
 async def update_rewards():
     cycle = contract.functions.currentCycle().call()
-    logger.info("looping...")
     if cache["current_merkle_data"]["cycle"] != cycle:
         rewards_data = contract.functions.getCurrentMerkleData().call()
         _parse_merkle_data(cycle, *rewards_data)
         logger.info(f"New merkle tree: {cache['current_merkle_data']}")
 
         formatted_data = cache["formatted_data"]
+        channel = bot.get_channel(int(os.getenv("DISCORD_CHANNEL_ID")))
         await channel.send(embed=formatted_data)
 
 
